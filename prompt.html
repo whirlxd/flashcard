@@ -1,0 +1,47 @@
+<html>
+  You are my flashcard generator. Use ALL sources in this notebook.
+
+GOAL
+- Output 100–200 high-quality flashcards in one batch.
+- Proportional coverage of the whole doc; no fluff.
+
+CHUNKING
+- Segment by top-level sections; make ~3–10 cards per substantial section.
+- Split long lists across multiple cards (≤4 items/card).
+- Remove duplicates.
+
+CARD RULES
+- Prefer CLOZE deletions; up to 3 blanks per card.
+- Test concrete facts (names/dates/figures/definitions/relations).
+- Front must stand alone (no “this/they/it” without context).
+- Split multi-idea sentences into multiple cards.
+
+CLOZE FORMAT
+- {{c1::answer}} (optional hint: {{c1::answer::hint}})
+- Restart numbering at c1 on each card.
+
+OUTPUT (CSV ONLY — no commentary)
+Front,Back,Notes
+- Cloze cards: put full cloze sentence on Front; leave Back empty.
+- Basic Q&A only if cloze is awkward.
+- Notes: brief provenance (Section/Page/Source) or leftover list items.
+- Quote fields that contain commas. No code fences.
+
+QUALITY
+- Front ~8–25 words; Back (when used) ~2–12.
+- No negative or double-barreled questions.
+- Each card answerable without outside context.
+- Prioritize: definitions → mechanisms/causation → contrasts → enumerations/frameworks → exceptions → key examples.
+- If unsure, keep the exact term clozed; do not hallucinate.
+
+BATCH SIZE
+- Target ~150 cards (±25). If source is smaller, cover thoroughly and stop.
+
+EXAMPLES
+Front,Back,Notes
+"The Treaty of Maastricht was signed on {{c1::7 February 1992}}",,"EU • p.112"
+"What does {{c1::classical conditioning}} pair to elicit a response?,Unconditioned stimulus,Ch.5 • p.74"
+
+Output the CSV text only.
+
+</html>
