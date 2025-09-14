@@ -1,0 +1,571 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Cloze Flashcards</title>
+    <style>
+        :root {
+            --bg: #0f1115;
+            --panel: #151923;
+            --muted: #7e8aa7;
+            --text: #e8ecf1;
+            --accent: #7aa2ff;
+            --accent-2: #4de3b8;
+            --danger: #ff6b6b;
+            --warn: #ffb86b;
+            --ok: #77dd77;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+            background: radial-gradient(1200px 600px at 20% -10%, #1a2030 0%, var(--bg) 60%);
+            color: var(--text);
+            min-height: 100vh;
+            display: grid;
+            grid-template-rows: auto 1fr auto;
+        }
+
+        header,
+        footer {
+            padding: 16px 20px;
+        }
+
+        header {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 12px;
+            align-items: center;
+            border-bottom: 1px solid #1f2330;
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0));
+            backdrop-filter: blur(6px);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        h1 {
+            font-size: 16px;
+            margin: 0;
+            letter-spacing: 0.3px;
+            color: #c9d8ff;
+        }
+
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            align-items: center;
+            justify-content: flex-end;
+        }
+
+        .btn {
+            background: #1a2030;
+            color: var(--text);
+            border: 1px solid #2a3246;
+            border-radius: 10px;
+            padding: 10px 14px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: 120ms ease-in-out;
+        }
+
+        .btn:hover {
+            border-color: #3a4561;
+            transform: translateY(-1px);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn.primary {
+            background: linear-gradient(180deg, #1e2a44, #19243a);
+            border-color: #33446b;
+        }
+
+        .btn.ghost {
+            background: transparent;
+        }
+
+        .btn.danger {
+            border-color: #5a2a2a;
+            color: #ffc9c9;
+        }
+
+        .toggle {
+            display: inline-flex;
+            gap: 8px;
+            align-items: center;
+            font-size: 13px;
+            color: var(--muted);
+        }
+
+        input[type="checkbox"] {
+            transform: translateY(1px);
+        }
+
+        main {
+            padding: 20px;
+            display: grid;
+            gap: 16px;
+        }
+
+        .uploader {
+            border: 1px dashed #384563;
+            border-radius: 14px;
+            padding: 22px;
+            display: grid;
+            gap: 10px;
+            align-items: center;
+            justify-items: center;
+            background: #121625;
+            cursor: pointer;
+            text-align: center;
+        }
+
+        .uploader:hover {
+            border-color: #4b5d86;
+        }
+
+        .uploader input {
+            display: none;
+        }
+
+        .uploader .hint {
+            font-size: 13px;
+            color: var(--muted);
+        }
+
+        .meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+            color: var(--muted);
+            font-size: 13px;
+        }
+
+        .pill {
+            background: #121623;
+            border: 1px solid #28324a;
+            color: #c7d2fe;
+            padding: 6px 10px;
+            border-radius: 999px;
+            font-size: 12px;
+        }
+
+        .deckbar {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .progress {
+            height: 8px;
+            background: #111522;
+            border: 1px solid #28324a;
+            border-radius: 999px;
+            overflow: hidden;
+            flex: 1;
+        }
+
+        .progress>div {
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent), var(--accent-2));
+            width: 0%;
+            transition: width 200ms ease;
+        }
+
+        .card {
+            background: radial-gradient(600px 300px at 30% 0%, rgba(122, 162, 255, 0.08), transparent 50%), var(--panel);
+            border: 1px solid #25304b;
+            border-radius: 16px;
+            padding: 24px;
+            min-height: 220px;
+            display: grid;
+            gap: 14px;
+            align-content: start;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+        }
+
+        .prompt {
+            font-size: 20px;
+            line-height: 1.5;
+        }
+
+        .answer {
+            font-size: 18px;
+            color: #cbe3ff;
+            border-top: 1px dashed #2a3350;
+            padding-top: 12px;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .blank {
+            display: inline-block;
+            padding: 0 6px;
+            border-radius: 6px;
+            border: 1px dashed #435382;
+            background: rgba(122, 162, 255, 0.08);
+            color: #9fb8ff;
+            cursor: pointer;
+        }
+
+        .blank.revealed {
+            border-style: solid;
+            color: #c7f9e5;
+            background: rgba(77, 227, 184, 0.12);
+        }
+
+        .actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        kbd {
+            background: #0d1220;
+            color: #c9d8ff;
+            border: 1px solid #27314a;
+            padding: 2px 6px;
+            border-radius: 6px;
+            font-size: 12px;
+        }
+
+        footer {
+            color: var(--muted);
+            font-size: 12px;
+            border-top: 1px solid #1f2330;
+        }
+
+        .tips {
+            display: flex;
+            gap: 14px;
+            flex-wrap: wrap;
+        }
+
+        .notice {
+            font-size: 13px;
+            color: var(--warn);
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <h1></h1>
+        <div class="controls">
+            <label class="toggle"><input id="shuffleToggle" type="checkbox" /> shuffle</label>
+            <button id="sampleBtn" class="btn ghost" title="Load a tiny sample deck">load sample</button>
+            <button id="resetBtn" class="btn danger" title="Clear current deck">reset</button>
+        </div>
+    </header>
+
+    <main>
+        <label class="uploader" id="uploader">
+            <input id="fileInput" type="file" accept=".csv,.txt" />
+            <div>
+                <div style="font-weight:600;">Drop a CSV, or click to choose</div>
+                <div class="hint">Format: <code>Front,Back</code> for basic cards. For cloze, a single column that
+                    contains <code>{{c1::answer}}</code> blocks is fine.</div>
+            </div>
+        </label>
+
+        <div class="meta" id="meta" hidden>
+            <span class="pill" id="countPill">0 cards</span>
+            <span class="pill" id="indexPill">0 / 0</span>
+            <span class="pill" id="typePill">—</span>
+            <span class="pill" id="deckPill">deck: none</span>
+        </div>
+
+        <div class="deckbar" id="deckbar" hidden>
+            <div class="progress">
+                <div id="progressFill"></div>
+            </div>
+            <div class="actions">
+                <button id="prevBtn" class="btn" title="Left arrow"><span>prev</span></button>
+                <button id="revealBtn" class="btn primary" title="Space">reveal</button>
+                <button id="nextBlankBtn" class="btn" title="N">reveal next blank</button>
+                <button id="nextBtn" class="btn" title="Right arrow"><span>next</span></button>
+            </div>
+        </div>
+
+        <section class="card" id="card" hidden>
+            <div class="prompt" id="front"></div>
+            <div class="answer hidden" id="back"></div>
+            <div class="notice" id="clozeNotice" hidden>Tip: click a blank to reveal it. Or press the button to reveal
+                next.</div>
+        </section>
+
+        <div class="tips" id="tips">
+            <div><strong>Shortcuts</strong>: <kbd>Space</kbd> reveal, <kbd>←</kbd>/<kbd>→</kbd> prev/next, <kbd>N</kbd>
+                reveal next blank.</div>
+            <div>Works offline. No libs. Your data stays in your browser.</div>
+        </div>
+    </main>
+
+    <footer>
+        Built for CSV in <code>Front,Back</code> and cloze syntax <code>{{c1::answer}}</code> or
+        <code>{{c1::answer::hint}}</code>.
+    </footer>
+
+    <script>
+        const els = {
+            uploader: document.getElementById('uploader'),
+            fileInput: document.getElementById('fileInput'),
+            shuffleToggle: document.getElementById('shuffleToggle'),
+            sampleBtn: document.getElementById('sampleBtn'),
+            resetBtn: document.getElementById('resetBtn'),
+            meta: document.getElementById('meta'),
+            deckbar: document.getElementById('deckbar'),
+            countPill: document.getElementById('countPill'),
+            indexPill: document.getElementById('indexPill'),
+            typePill: document.getElementById('typePill'),
+            deckPill: document.getElementById('deckPill'),
+            progressFill: document.getElementById('progressFill'),
+            card: document.getElementById('card'),
+            front: document.getElementById('front'),
+            back: document.getElementById('back'),
+            clozeNotice: document.getElementById('clozeNotice'),
+            prevBtn: document.getElementById('prevBtn'),
+            revealBtn: document.getElementById('revealBtn'),
+            nextBlankBtn: document.getElementById('nextBlankBtn'),
+            nextBtn: document.getElementById('nextBtn'),
+        };
+
+        let deck = [];
+        let idx = 0;
+        let seen = 0;
+        let deckId = 'none';
+
+        function escapeHTML(s) {
+            return s.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;').replaceAll("'", '&#39;');
+        }
+
+        function splitCSVLine(line) {
+            // Supports quotes. Minimal parser, no newlines inside fields.
+            const out = [];
+            let cur = '';
+            let inQ = false;
+            for (let i = 0; i < line.length; i++) {
+                const ch = line[i];
+                if (ch === '"') {
+                    if (inQ && line[i + 1] === '"') { cur += '"'; i++; }
+                    else { inQ = !inQ; }
+                } else if (ch === ',' && !inQ) {
+                    out.push(cur); cur = '';
+                } else { cur += ch; }
+            }
+            out.push(cur);
+            return out.map(s => s.trim());
+        }
+
+        function makeBasic(front, back) {
+            return { type: 'basic', front, back };
+        }
+
+        function makeCloze(raw) {
+            const clozeRe = /\{\{c(\d+)::(.*?)(?:::(.*?))?\}\}/g;
+            const parts = [];
+            const clozes = [];
+            let last = 0; let order = 0;
+            for (const m of raw.matchAll(clozeRe)) {
+                const start = m.index;
+                const end = m.index + m[0].length;
+                const before = raw.slice(last, start);
+                parts.push({ kind: 'txt', text: before });
+                clozes.push({ order, num: parseInt(m[1], 10), ans: m[2], hint: m[3] || '', revealed: false });
+                parts.push({ kind: 'blank', i: order });
+                order++; last = end;
+            }
+            parts.push({ kind: 'txt', text: raw.slice(last) });
+
+            // Build masked HTML with escaped text pieces
+            const html = parts.map(p => {
+                if (p.kind === 'txt') return escapeHTML(p.text);
+                const i = p.i;
+                const ans = clozes[i].ans;
+                const maskLen = Math.max(3, Math.min(12, ans.replace(/\s+/g, '').length));
+                const mask = '[' + '…'.repeat(maskLen) + ']';
+                return `<span class="blank" data-idx="${i}" title="click to reveal">${mask}</span>`;
+            }).join('');
+
+            // Escaped back string that lists answers
+            const answers = clozes.map(c => `c${c.num}: ${escapeHTML(c.ans)}`).join(' \u2022 ');
+            return { type: 'cloze', raw, clozes, html, answers };
+        }
+
+        function parseCSV(text) {
+            const lines = text.split(/\r?\n/).filter(l => l.trim().length > 0);
+            const cards = [];
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i].trim();
+                if (i === 0 && /^front\s*,\s*back/i.test(line)) continue; // header
+                const cols = splitCSVLine(line);
+                const clozeIdx = cols.findIndex(col => col.includes('{{c'));
+                if (clozeIdx !== -1) {
+                    const raw = cols[clozeIdx];
+                    const extra = cols.filter((_, j) => j !== clozeIdx).join(',');
+                    const card = makeCloze(raw);
+                    card.extra = (extra || '').trim();
+                    cards.push(card);
+                } else if (cols.length >= 2) {
+                    const front = cols[0];
+                    const back = cols.slice(1).join(',');
+                    cards.push(makeBasic(front, back));
+                } else {
+                    cards.push(makeBasic(cols[0], ''));
+                }
+            }
+            return cards;
+        }
+
+        function shuffle(arr) {
+            for (let i = arr.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [arr[i], arr[j]] = [arr[j], arr[i]];
+            }
+            return arr;
+        }
+
+        function setDeck(newDeck, name) {
+            deck = newDeck;
+            if (els.shuffleToggle.checked) shuffle(deck);
+            idx = 0; seen = 0; deckId = name || 'custom';
+            els.meta.hidden = false;
+            els.deckbar.hidden = deck.length === 0;
+            els.card.hidden = deck.length === 0;
+            els.deckPill.textContent = 'deck: ' + deckId;
+            els.countPill.textContent = `${deck.length} cards`;
+            render();
+        }
+
+        function updatePills() {
+            els.indexPill.textContent = `${Math.min(idx + 1, deck.length)} / ${deck.length}`;
+            els.typePill.textContent = deck[idx] ? deck[idx].type : '—';
+            const pct = deck.length ? Math.round(((idx) / deck.length) * 100) : 0;
+            els.progressFill.style.width = pct + '%';
+        }
+
+        function render() {
+            if (deck.length === 0) {
+                els.card.hidden = true; return;
+            }
+            els.card.hidden = false;
+            const card = deck[idx];
+            els.back.classList.add('hidden');
+            els.clozeNotice.hidden = card.type !== 'cloze';
+
+            if (card.type === 'basic') {
+                els.front.innerHTML = escapeHTML(card.front);
+                els.back.innerHTML = escapeHTML(card.back);
+            } else {
+                // Reset reveal state
+                card.clozes.forEach(c => c.revealed = false);
+                els.front.innerHTML = card.html;
+                els.back.innerHTML = escapeHTML(card.answers + (card.extra ? ' • ' + card.extra : ''));
+                // Wire click-to-reveal
+                els.front.querySelectorAll('.blank').forEach(span => {
+                    span.addEventListener('click', () => {
+                        const i = parseInt(span.getAttribute('data-idx'), 10);
+                        revealCloze(i);
+                    });
+                });
+            }
+            updatePills();
+        }
+
+        function reveal() {
+            const card = deck[idx];
+            if (card.type === 'basic') {
+                els.back.classList.remove('hidden');
+            } else {
+                // reveal all blanks
+                for (let i = 0; i < card.clozes.length; i++) revealCloze(i);
+            }
+        }
+
+        function revealNextBlank() {
+            const card = deck[idx];
+            if (card.type !== 'cloze') return;
+            const i = card.clozes.findIndex(c => !c.revealed);
+            if (i === -1) return;
+            revealCloze(i);
+        }
+
+        function revealCloze(i) {
+            const card = deck[idx];
+            const span = els.front.querySelector(`.blank[data-idx="${i}"]`);
+            if (!span || card.clozes[i].revealed) return;
+            span.textContent = card.clozes[i].ans;
+            span.classList.add('revealed');
+            card.clozes[i].revealed = true;
+        }
+
+        function next() { if (deck.length) { idx = Math.min(deck.length - 1, idx + 1); render(); } }
+        function prev() { if (deck.length) { idx = Math.max(0, idx - 1); render(); } }
+
+        // Events
+        els.fileInput.addEventListener('change', async (e) => {
+            const file = e.target.files?.[0];
+            if (!file) return;
+            const text = await file.text();
+            const cards = parseCSV(text);
+            setDeck(cards, file.name.replace(/\.(csv|txt)$/i, '') || 'deck');
+            els.uploader.style.display = 'none';
+        });
+
+        // Drag drop
+        ;['dragenter', 'dragover'].forEach(ev => {
+            els.uploader.addEventListener(ev, e => { e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; els.uploader.style.borderColor = '#5a6ea3'; });
+        });
+        ;['dragleave', 'drop'].forEach(ev => {
+            els.uploader.addEventListener(ev, e => { e.preventDefault(); els.uploader.style.borderColor = '#384563'; });
+        });
+        els.uploader.addEventListener('drop', async (e) => {
+            const file = e.dataTransfer.files?.[0];
+            if (!file) return;
+            const text = await file.text();
+            const cards = parseCSV(text);
+            setDeck(cards, file.name.replace(/\.(csv|txt)$/i, '') || 'deck');
+            els.uploader.style.display = 'none';
+        });
+
+        els.uploader.addEventListener('click', () => els.fileInput.click());
+
+        els.prevBtn.addEventListener('click', prev);
+        els.nextBtn.addEventListener('click', next);
+        els.revealBtn.addEventListener('click', reveal);
+        els.nextBlankBtn.addEventListener('click', revealNextBlank);
+        els.resetBtn.addEventListener('click', () => { deck = []; idx = 0; setDeck([], 'none'); els.uploader.style.display = 'grid'; els.meta.hidden = true; els.deckbar.hidden = true; document.getElementById('card').hidden = true; });
+
+        els.sampleBtn.addEventListener('click', () => {
+            const sample = `Front,Back\nWhat is the capital of France?,Paris\nNewton's second law states that...,F = ma\nThe end of {{c1::bipolarity}} in world politics...\n{{c1::Photosynthesis}} occurs in the {{c2::chloroplasts}} of plant cells.`;
+            const cards = parseCSV(sample);
+            setDeck(cards, 'sample');
+            els.uploader.style.display = 'none';
+        });
+
+        // Keyboard shortcuts
+        window.addEventListener('keydown', (e) => {
+            if (e.target && ['INPUT', 'TEXTAREA'].includes(e.target.tagName)) return;
+            if (e.code === 'Space') { e.preventDefault(); reveal(); }
+            else if (e.code === 'ArrowRight') { next(); }
+            else if (e.code === 'ArrowLeft') { prev(); }
+            else if (e.key.toLowerCase() === 'n') { revealNextBlank(); }
+        });
+    </script>
+</body>
+
+</html>
